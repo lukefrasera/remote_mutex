@@ -4,7 +4,11 @@ project(remote_mutex)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED
+	roscpp
+ 	rospy
+	message_generation
+)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -47,11 +51,10 @@ find_package(catkin REQUIRED)
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  remote_mutex_msg.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -96,8 +99,8 @@ find_package(catkin REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES remote_mutex
+  INCLUDE_DIRS include
+  LIBRARIES remote_mutex
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -108,7 +111,7 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(include)
 
 ## Declare a C++ library
 # add_library(remote_mutex
@@ -122,7 +125,9 @@ catkin_package(
 
 ## Declare a C++ executable
 # add_executable(remote_mutex_node src/remote_mutex_node.cpp)
-
+add_library(remote_mutex
+  src/${PROJECT_NAME}/remote_mutex.cpp
+)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(remote_mutex_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
