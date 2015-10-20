@@ -1,9 +1,26 @@
-#include <string>
-#include "ros/ros.h"
-#include "ros_remote_mutex.h"
+/*
+remote_mutex
+Copyright (C) 2015  Luke Fraser
+
+remote_mutex is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+remote_mutex is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with remote_mutex.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include <boost/thread/thread.hpp>
 #include <boost/date_time.hpp>
+#include <string>
 #include <fstream>
+#include "ros/ros.h"
+#include "remote_mutex/remote_mutex.h"
 class RemoteMutexService;
 
 void Record(RemoteMutexService* mut);
@@ -12,18 +29,21 @@ class RemoteMutexService {
  public:
   bool locked;
   std::string owner;
-  ros::ServiceServer service;  
+  ros::ServiceServer service;
   ros::NodeHandle ns;
   float activation_potential;
   boost::mutex mut;
   boost::thread* record_thread;
   std::ofstream file;
 
-  RemoteMutexService(const char* name) {
+  explicit RemoteMutexService(const char* name) {
     locked = false;
     owner = "";
     activation_potential = 0.0f;
-    service = ns.advertiseService(name, &RemoteMutexService::MutexRequest, this);
+    service = ns.advertiseService(
+      name,
+      &RemoteMutexService::MutexRequest,
+      this);
     record_thread = new boost::thread(&Record, this);
     file.open("/home/luke/Documents/ws/Data/remote_mutex.csv");
     file.precision(15);
@@ -31,22 +51,23 @@ class RemoteMutexService {
 
   ~RemoteMutexService() {
     file.close();
+    delete record_thread;
   }
 
- void RecordToFile() {
-  boost::posix_time::ptime time_t_epoch(boost::gregorian::date(1970,1,1));
-  boost::posix_time::time_duration diff = boost::posix_time::microsec_clock::universal_time() - time_t_epoch;
-  double seconds = (double)diff.total_seconds() + (double)diff.fractional_seconds() / 1000000.0;
-  file  << std::fixed
-        << seconds
-        << ", "
-        << owner
-        << "\n";
-        file.flush();
+  void RecordToFile() {
+    boost::posix_time::ptime time_t_epoch(boost::gregorian::date(1970,1,1));
+    boost::posix_time::time_duration diff = boost::posix_time::microsec_clock::universal_time() - time_t_epoch;
+    double seconds = (double)diff.total_seconds() + (double)diff.fractional_seconds() / 1000000.0;
+    file  << std::fixed
+          << seconds
+          << ", "
+          << owner
+          << "\n";
+          file.flush();
 }
 
-  bool MutexRequest(baxter_demos::remote_mutex::Request &req,
-      baxter_demos::remote_mutex::Response &res) {
+  bool MutexRequest(remote_mutex::remote_mutex_msg::Request &req,
+      remote_mutex::remote_mutex_msg::Response &res) {
     if (req.request) {
       if (locked) {
         res.success = false;
@@ -105,10 +126,14 @@ void Record(RemoteMutexService* mut) {
 }
 int main(int argc, char **argv) {
   ros::init(argc, argv, "remote_mutex_server");
-
-  RemoteMutexService mutex(argv[1]);
-  ros::AsyncSpinner spinner(8);
-  spinner.start();
-  ros::waitForShutdown();
+  if (argc > 2) {
+    RemoteMutexService mutex(argv[1]);
+    ros::AsyncSpinner spinner(8);
+    spinner.start();
+    ros::waitForShutdown();
+  } else {
+    ROS_FATAL("A Mutex Name is a required Parameter - None Given");
+    return -1;
+  }
   return 0;
 }
