@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(remote_mutex)
 
-find_package(catkin REQUIRED
+find_package(catkin REQUIRED COMPONENTS
 	roscpp
  	rospy
 	message_generation
   std_msgs
+  timeseries_recording_toolkit
 )
 
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -23,10 +24,13 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES remote_mutex
-#  DEPENDS system_lib
+  DEPENDS timeseries_recording_toolkit
 )
 
-include_directories(include)
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
 
 add_library(remote_mutex
   src/${PROJECT_NAME}/remote_mutex.cpp
@@ -41,10 +45,12 @@ add_dependencies(remote_mutex_service
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
   ${PROJECT_NAME}_generate_messages_cpp
+  timeseries_recording_toolkit
 )
 
 target_link_libraries(remote_mutex_service
   ${catkin_LIBRARIES}
+  timeseries_recording_toolkit
 )
 target_link_libraries(remote_mutex
   ${catkin_LIBRARIES}

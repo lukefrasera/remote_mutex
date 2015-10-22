@@ -21,6 +21,8 @@ along with remote_mutex.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include "ros/ros.h"
 #include "remote_mutex/remote_mutex.h"
+#include "timeseries_recording_toolkit/record_timeseries_data_to_file.h"
+
 class RemoteMutexService;
 
 void Record(RemoteMutexService* mut);
@@ -35,8 +37,11 @@ class RemoteMutexService {
   boost::mutex mut;
   boost::thread* record_thread;
   std::ofstream file;
+  recording_toolkit::FilePrintRecorder record_object;
 
-  explicit RemoteMutexService(const char* name) {
+  explicit RemoteMutexService(const char* name)
+      : record_object("/home/luke/Documents/ws/Data/remote_mutex.csv",
+        100) {
     locked = false;
     owner = "";
     activation_potential = 0.0f;
@@ -45,25 +50,20 @@ class RemoteMutexService {
       &RemoteMutexService::MutexRequest,
       this);
     record_thread = new boost::thread(&Record, this);
-    file.open("/home/luke/Documents/ws/Data/remote_mutex.csv");
-    file.precision(15);
+    record_object.StartRecord();;
   }
 
   ~RemoteMutexService() {
-    file.close();
     delete record_thread;
+    // record_object.WaitUntilFinishedWriting();
+    record_object.StopRecord();
   }
 
   void RecordToFile() {
     boost::posix_time::ptime time_t_epoch(boost::gregorian::date(1970,1,1));
     boost::posix_time::time_duration diff = boost::posix_time::microsec_clock::universal_time() - time_t_epoch;
     double seconds = (double)diff.total_seconds() + (double)diff.fractional_seconds() / 1000000.0;
-    file  << std::fixed
-          << seconds
-          << ", "
-          << owner
-          << "\n";
-          file.flush();
+    record_object.RecordPrintf("%f, %s\n", seconds, owner.c_str());
 }
 
   bool MutexRequest(remote_mutex::remote_mutex_msg::Request &req,
@@ -121,12 +121,12 @@ class RemoteMutexService {
 void Record(RemoteMutexService* mut) {
   while (true) {
     mut->RecordToFile();
-    boost::this_thread::sleep(boost::posix_time::millisec(500));
+    boost::this_thread::sleep(boost::posix_time::millisec(50));
   }
 }
 int main(int argc, char **argv) {
   ros::init(argc, argv, "remote_mutex_server");
-  if (argc > 2) {
+  if (argc >= 2) {
     RemoteMutexService mutex(argv[1]);
     ros::AsyncSpinner spinner(8);
     spinner.start();
