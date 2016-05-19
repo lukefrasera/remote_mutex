@@ -26,7 +26,9 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-include_directories(include)
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  include)
 
 add_library(remote_mutex
   src/${PROJECT_NAME}/remote_mutex.cpp
@@ -40,6 +42,10 @@ add_dependencies(remote_mutex_service
   remote_mutex
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_generate_messages_cpp
+)
+
+add_dependencies(remote_mutex
   ${PROJECT_NAME}_generate_messages_cpp
 )
 
