@@ -54,7 +54,7 @@ add_dependencies(remote_mutex
 
 target_link_libraries(remote_mutex_service
   ${catkin_LIBRARIES}
-  timeseries_recording_toolkit
+  #timeseries_recording_toolkit
 )
 target_link_libraries(remote_mutex
   ${catkin_LIBRARIES}
